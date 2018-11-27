@@ -45,13 +45,14 @@ int main(){
     int argc=0;
     char *argv[10]={NULL};
     char *cur=orig;
+    char *last=NULL;
     char *input=stdin;
     char *output=stdout;
     while (*cur != NULL){
         while (isspace(*cur)){
             cur++;
         }
-        if (argc==0){
+        if (argc==0 || ){
             if (*cur == '<'){ 
                 perror("bad input redirection\n");
                 printf("failed to yada yada\n");
