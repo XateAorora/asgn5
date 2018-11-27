@@ -52,7 +52,7 @@ int main(){
         while (isspace(*cur)){
             cur++;
         }
-        if (argc==0 || ){
+        if (argc==0 || last != '<' || last != '>' || last != '|'){
             if (*cur == '<'){ 
                 perror("bad input redirection\n");
                 printf("failed to yada yada\n");
@@ -69,7 +69,9 @@ int main(){
                 return 1;
             }
         }
+        
         //checks if it has existing input/output that's not in/out 
+        last=cur; //used to check for > <
     }
 }
 //if return 1: failed to parse input (put this into a v
