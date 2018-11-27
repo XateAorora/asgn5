@@ -43,7 +43,7 @@ int main(){
         return 1;
     }
     int argcnumber=0;
-    char *argvlist[10]={NULL};
+    char argvlist[10][]={NULL};
     char *cur=orig;
     char *last=NULL;
     char *input=stdin;
@@ -53,7 +53,7 @@ int main(){
         while (isspace(*cur)){
             cur++;
         }
-        if (argcnumber==0 || last != '<' || last != '>' || last != '|'){
+        if (argcnumber==0 || last == '<' || last == '>' || last == '|'){
             if (*cur == '<'){ 
                 perror("bad input redirection\n");
                 printf("failed to parse pipeline\n");
@@ -85,7 +85,9 @@ int main(){
             cur++;
         }
         if (*cur == '|'){
-            
+            //print routine
+            stage++;
+            *cur++;
         }
         else{
             if (argc == 10){
