@@ -42,17 +42,18 @@ int main(){
         perror("command too long");
         return 1;
     }
-    int argc=0;
-    char *argv[10]={NULL};
+    int argcnumber=0;
+    char *argvlist[10]={NULL};
     char *cur=orig;
     char *last=NULL;
     char *input=stdin;
     char *output=stdout;
+    int stage=0;
     while (*cur != NULL){
         while (isspace(*cur)){
             cur++;
         }
-        if (argc==0 || last != '<' || last != '>' || last != '|'){
+        if (argcnumber==0 || last != '<' || last != '>' || last != '|'){
             if (*cur == '<'){ 
                 perror("bad input redirection\n");
                 printf("failed to yada yada\n");
@@ -69,9 +70,24 @@ int main(){
                 return 1;
             }
         }
-        
+        //checks the last pointer to decide name's function
+        if (last == '<'){
+            if (input == stdin) {
+                
+            }
+            else{
+                perror("bad input redirection\n");
+                printf("failed to yada yada\n");
+                return 1;            }
+        }
+        last=cur; //used to check for > <, start of name
+        if (argcnumber == 0){
+            argvlist[argcnumber] = *cur;
+            argcnumber++;
+            cur = index(cur, ' ');
+        }
+        if (*cur = '>'
         //checks if it has existing input/output that's not in/out 
-        last=cur; //used to check for > <
     }
 }
 //if return 1: failed to parse input (put this into a v
