@@ -48,7 +48,7 @@ int main(){
     char *last=NULL;
     char *input=stdin;
     char *output=stdout;
-    int stage=0;
+    int stage = 0;
     while (*cur != NULL){
         while (isspace(*cur)){
             cur++;
@@ -56,37 +56,47 @@ int main(){
         if (argcnumber==0 || last != '<' || last != '>' || last != '|'){
             if (*cur == '<'){ 
                 perror("bad input redirection\n");
-                printf("failed to yada yada\n");
+                printf("failed to parse pipeline\n");
                 return 1;
             }
             if (*cur == '>'){ 
                 perror("bad output redirection");
-                printf("failed to yada yada\n");
+                printf("failed to parse pipeline\n");
                 return 1;
             }
             if (*cur == '|'){ 
                 perror("invalid null command");
-                printf("failed to yada yada\n");
+                printf("failed to parse pipeline\n");
                 return 1;
             }
         }
         //checks the last pointer to decide name's function
         if (last == '<'){
             if (input == stdin) {
-                
+                input = cur;
             }
             else{
                 perror("bad input redirection\n");
-                printf("failed to yada yada\n");
+                printf("failed to parse pipeline\n");
                 return 1;            }
         }
         last=cur; //used to check for > <, start of name
-        if (argcnumber == 0){
+        if (*cur == '>' || *cur == '<'){
+            cur++;
+        }
+        if (*cur == '|'){
+            
+        }
+        else{
+            if (argc == 10){
+                perror("invalid null command");
+                printf("failed to parse pipeline\n");
+                return 1;
+            }
             argvlist[argcnumber] = *cur;
             argcnumber++;
             cur = index(cur, ' ');
         }
-        if (*cur = '>'
         //checks if it has existing input/output that's not in/out 
     }
 }
