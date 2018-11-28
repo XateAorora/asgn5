@@ -1,111 +1,107 @@
-#include <studio.h>
+#include <stdio.h>
 #include <string.h>
-//and more
+#include <ctype.h>
+int correctString(char *string);
+char *copyToSpace(char *source, char *copy);
 
-//goal: parse line and print accordingly
-//question: memory management for calloc for 
-/* somehow?
-Command line length: at least 512 bytes
-Commands in a pipeline: at least 10
-Arguments to a command: at least 10
-*/
-//original: contains original string (where we use index to increment with "< >" until it's false)
-//stage: string butchered by "|" token
-//stuff: string butchered by " "
-//use strtoken to find the very first command, ignoring all things before it ("< >")
-//compare strtoken and stroken (NULL, "|") to see if it found the end of the stage
-//if said strtoken above ^ is not NULL, repeat (to find the extent of the user input relevant to the stage)
-//OR use strbreak to find the start of the stage n (+1 then strtoken)
-//have a second strtoken that uses " " to break line into elements
+/*takes string source and copies everything up to a space
+  assumes that *copy can handle it*/
 
-//implementation: use the last token to expect the next one
-
-//char *pch=NULL;
-//while (pch=strtok) //if pch==NULL, abort
-//if lazy, isspace() is there to help you with finding the end of a name :D without relying on strtoken
-//limits: 512 bytes for line length (?)
-//pointers to pointer for location of the next | or next argument/ ><
-
-
-int main(){
-    printf("line: ");
-    char orig[257] = {NULL};
-    sscanf(stdin,"line: %s",orig);
-/*    int a=parseline(orig);
-    if a==1{
-        printf("failed to parse line");
-    }
-    else{
-        //the loop
-    }*/
-    if (orig[257] != NULL){
-        perror("command too long");
-        return 1;
-    }
-    int argcnumber=0;
-    char argvlist[10][]={NULL};
-    char *cur=orig;
-    char *last=NULL;
-    char *input=stdin;
-    char *output=stdout;
-    int stage = 0;
-    while (*cur != NULL){
-        while (isspace(*cur)){
-            cur++;
-        }
-        if (argcnumber==0 || last == '<' || last == '>' || last == '|'){
-            if (*cur == '<'){ 
-                perror("bad input redirection\n");
-                printf("failed to parse pipeline\n");
-                return 1;
+void pipePrint(int pipeNum, char *input, char *output,
+                char *pipeLine){
+        int i = 0, countSpace = 0;
+        char *argumentsList[10] = { NULL};
+        printf("--------\nStage %i: \"%s\"\n--------\n", pipeNum, pipeLine);
+        /*check if or if not a pipe*/
+        (input == NULL) ?
+            printf("     input: Pipe from stage %i\n", pipeNum - 1):
+            printf("     input: %s\n", input);
+        (output == NULL) ?
+            printf("    output: Pipe to stage %i\n", pipeNum + 1):
+            printf("    output: %s\n", output);
+        
+        /*checks for argumentsList*/
+        char *cur = pipeLine;
+        do{
+            while(*cur == ' '){
+                *(cur++) = '\0'; 
             }
-            if (*cur == '>'){ 
-                perror("bad output redirection");
-                printf("failed to parse pipeline\n");
-                return 1;
+            if(*cur == '<' || *cur == '>'){
+                if(*(++cur) == ' '){
+                    while(*cur == ' '){
+                        *(cur++) = '\0'; 
+                    }
+                }
+                while(*cur != ' ' && *cur != '\0'){
+                    *(cur++) = '\0'; 
+                }
+            }else if(*cur != '\0'){
+                argumentsList[countSpace++] = cur;
             }
-            if (*cur == '|'){ 
-                perror("invalid null command");
-                printf("failed to parse pipeline\n");
-                return 1;
-            }
+        }while((cur = strchr(cur, ' ')) != NULL);
+        
+        printf("      argc: %i\n", countSpace);
+        printf("      argv: ");
+        for(; i < countSpace; i++){
+            printf("\"%s\"", argumentsList[i]);
+            (i == countSpace - 1) ? printf("\n") : printf(","); /*Tetiraty operand to check for end of line*/
         }
-        //checks the last pointer to decide name's function
-        if (last == '<'){
-            if (input == stdin) {
-                input = cur;
-            }
-            else{
-                perror("bad input redirection\n");
-                printf("failed to parse pipeline\n");
-                return 1;            }
-        }
-        last=cur; //used to check for > <, start of name
-        if (*cur == '>' || *cur == '<'){
-            cur++;
-        }
-        if (*cur == '|'){
-            //print routine
-            stage++;
-            *cur++;
-        }
-        else{
-            if (argc == 10){
-                perror("invalid null command");
-                printf("failed to parse pipeline\n");
-                return 1;
-            }
-            argvlist[argcnumber] = *cur;
-            argcnumber++;
-            cur = index(cur, ' ');
-        }
-        //checks if it has existing input/output that's not in/out 
-    }
+        printf("--------\n");
 }
-//if return 1: failed to parse input (put this into a v
-//if first thing is not name, throw null error. If it is, increment argc and put it into argv with pointer and isspace loop
 
-//if redirection, check next one if it's name, NULL, or redirection
-int isredirection(char c){
+char *copyToSpace(char *source, char *copy){
+    while(*source != '<' && *source != '>' && !(isspace(*source)) 
+            && *source != 0)){
+	    *(copy++) = *(source++);
+    }
+    *copy = '\0';
+    return source;
+}
+
+int correctString(char *string){
+    int countPipes = 0, i = 0; /*number of pipes, for looping*/
+    char *pipesList[10] = { NULL };
+    char *argumentsList[10] = { NULL };
+    char *cursor = string, *cur = string;
+    char program[257] = "";
+    char input[257] = "original stdin";
+    char output[257] = "original stdout";
+    cursor = copyToSpace(cursor, program);
     
+    /*check for input and output*/
+    while(*(++cursor) == ' ');
+    if(*cursor == '<'){
+        while(*(cursor++) == ' ');
+	    cursor = copyToSpace(cursor, input);
+	    while(*(cursor++) == ' ');
+    }
+    if(*cursor == '<'){
+        while(*(cursor++) == ' ');
+	    cursor = copyToSpace(cursor, output);
+	    while(*(cursor++) == ' ');
+    }
+    if(*cursor == '<'){
+        cursor++;
+        while(*(cursor++) == ' ');
+	    cursor = copyToSpace(cursor, input);
+    }
+    
+    /*Pipes*/
+    pipesList[countPipes++] = string;
+    while((cur = strchr(cur, '|')) != NULL){
+        pipesList[countPipes++] = cur + 1;
+        *(cur++) = '\0';
+    }
+    for(i = 0; i < countPipes; i++){
+        pipePrint(i, ((i == 0) ? input : NULL),
+                    ((i == countPipes - 1) ? output : NULL), pipesList[i]);
+    }
+    return 1;
+}
+
+int main()
+{
+    char str[256] = "ls< a";
+    correctString(str);
+    return 0;
 }
