@@ -90,18 +90,17 @@ int main(){
                 }
                 printf("\n--------\nStage %d: \"%s\"\n--------\n", 
                 stage,cmdline);
-                if (input != NULL){
-                    printf("     input: %s\n", input);
-                }
-                else {
+                if (input == NULL){
                     printf("     input: pipe from stage %d\n", stage-1);
                 }
-                if ((output != NULL) 
-                    || (output == "original stdout" && laststage != 0)){
-                    printf("    output: %s\n", output);
+                else {
+                    printf("     input: %s\n", input);
+                }
+                if ((output == NULL)){
+                    printf("    output: pipe to stage %d\n", stage+1);
                 }
                 else {
-                    printf("    output: pipe to stage %d\n", stage+1);
+                    printf("    output: %s\n", output);
                 }
                 printf("      argc: %d\n", argcnumber);
                 printf("      argv: ");
