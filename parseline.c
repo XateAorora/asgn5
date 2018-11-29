@@ -1,107 +1,196 @@
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
-int correctString(char *string);
-char *copyToSpace(char *source, char *copy);
+#define PIPELIMIT 10
+#define ARGLIMIT 10
+#define INPUTLIMIT 512
+//and more
 
-/*takes string source and copies everything up to a space
-  assumes that *copy can handle it*/
+//goal: parse line and print accordingly
+//question: memory management for calloc for 
+/* somehow?
+Command line length: at least 512 bytes
+Commands in a pipeline: at least 10
+Arguments to a command: at least 10
+*/
+//original: contains original string (where we use strchr to increment with "< >" until it's false)
+//stage: string butchered by "|" token
+//stuff: string butchered by " "
+//use strtoken to find the very first command, ignoring all things before it ("< >")
+//compare strtoken and stroken (NULL, "|") to see if it found the end of the stage
+//if said strtoken above ^ is not NULL, repeat (to find the extent of the user input relevant to the stage)
+//OR use strbreak to find the start of the stage n (+1 then strtoken)
+//have a second strtoken that uses " " to break line into elements
 
-void pipePrint(int pipeNum, char *input, char *output,
-                char *pipeLine){
-        int i = 0, countSpace = 0;
-        char *argumentsList[10] = { NULL};
-        printf("--------\nStage %i: \"%s\"\n--------\n", pipeNum, pipeLine);
-        /*check if or if not a pipe*/
-        (input == NULL) ?
-            printf("     input: Pipe from stage %i\n", pipeNum - 1):
-            printf("     input: %s\n", input);
-        (output == NULL) ?
-            printf("    output: Pipe to stage %i\n", pipeNum + 1):
-            printf("    output: %s\n", output);
-        
-        /*checks for argumentsList*/
-        char *cur = pipeLine;
-        do{
-            while(*cur == ' '){
-                *(cur++) = '\0'; 
-            }
-            if(*cur == '<' || *cur == '>'){
-                if(*(++cur) == ' '){
-                    while(*cur == ' '){
-                        *(cur++) = '\0'; 
-                    }
-                }
-                while(*cur != ' ' && *cur != '\0'){
-                    *(cur++) = '\0'; 
-                }
-            }else if(*cur != '\0'){
-                argumentsList[countSpace++] = cur;
-            }
-        }while((cur = strchr(cur, ' ')) != NULL);
-        
-        printf("      argc: %i\n", countSpace);
-        printf("      argv: ");
-        for(; i < countSpace; i++){
-            printf("\"%s\"", argumentsList[i]);
-            (i == countSpace - 1) ? printf("\n") : printf(","); /*Tetiraty operand to check for end of line*/
+//implementation: use the last token to expect the next one
+
+//char *pch=NULL;
+//while (pch=strtok) //if pch==NULL, abort
+//if lazy, isspace() is there to help you with finding the end of a name :D without relying on strtoken
+//limits: 512 bytes for line length (?)
+//pointers to pointer for location of the next | or next argument/ ><
+
+
+int main(){
+    printf("line: ");
+    char orig[INPUTLIMIT + 1] = {'\0'}; //string butchered for cmdline print with "|"
+    //sscanf(stdin,"line: %s",orig);
+    fgets(orig, INPUTLIMIT + 1, stdin);
+    if (orig[INPUTLIMIT] != '\0'){
+        printf("command too long\n");
+        perror("failed to parse pipeline\n");
+        return 1;
+    }
+    if (orig[0] == '\0'){
+        printf("invalid null command\n");
+        perror("failed to parse pipeline\n");
+    }
+    char copy[INPUTLIMIT+1] = {'\0'}; //string butchered with \0 after each name
+    strcpy(copy,orig);
+    int argcnumber = 0;
+    char *argvlist[ARGLIMIT] = {NULL};
+    char *cur = copy;
+    char *last = &orig[INPUTLIMIT];
+    char *input = "original stdin";
+    char *output = "original stdout";
+    int stage = 0;    
+    char *cmdline = orig;
+    int laststage = 0;
+    while (cmdline = strchr(cmdline, '|')){
+        laststage++;
+    }
+    cmdline = orig;
+    if (laststage >= PIPELIMIT){
+        printf("pipeline too deep\n");
+    }
+    while (*cur != '\0' || *last != '\0'){
+        while (isspace(*cur)){
+            cur++;
         }
-        printf("--------\n");
-}
+        if (argcnumber == 0 && 
+        (*last == '<' || *last == '>'  || *last == '|')){
+            printf("invalid null command\n");
+            perror("failed to parse pipeline\n");
+            return 1;
+        }
+        if (*cur == '<' || *cur == '>' || *cur == '|'){
+            if (*last == '<'){ 
+                printf("%s: bad input redirection\n", argvlist[0]);
+                perror("failed to parse pipeline\n");
+                return 1;
+            }
+            if (*last == '>'){ 
+                printf("%s: bad output redirection\n", argvlist[0]);
+                perror("failed to parse pipeline\n");
+                return 1;
+            }
+        }
+        //checks the last pointer to decide cur name's function
+        if (*last == '<'){
+            if (stage != 0){
+                printf("%s: ambiguous input\n", argvlist[0]);
+                perror("failed to parse pipeline\n");
+                return 1;         
+            }
+            if (input == "original stdin") {
+                input = cur;
+            }
+            else{
+                printf("%s: bad input redirection\n", argvlist[0]);
+                perror("failed to parse pipeline\n");
+                return 1;           
+            }
+        }
+        if (*last == '>'){
+            if (stage < laststage){
+                printf("%s: ambiguous output\n", argvlist[0]);
+                perror("failed to parse pipeline\n");
+                return 1;         
+            }
+            if (output == "original stdout") {
+                output = cur;
+            }
+            else{
+                printf("%s: bad output redirection\n", argvlist[0]);
+                perror("failed to parse pipeline\n");
+                return 1;            
+            }
+        }
+        last = cur; //for saving as cur will be ++
+        if (*cur == '>' || *cur == '<'){
+            cur++;
+        }
+        if (*cur == '\0' || *cur == '|'){
+            //print routine: checks if output has pipe for ambiguous, and this is where output is changed based on pipe
+            //print routine, then with cur==last==NULL, exit loop if \0
+            if (cmdline == orig){
+                cmdline = strtok(orig, "|\n"); 
+            }
+            else{
+                cmdline = strtok(NULL, "|\n");
+            }
+            printf("\n--------\nStage %d: \"%s\"\n--------", stage,cmdline);
 
-char *copyToSpace(char *source, char *copy){
-    while(*source != '<' && *source != '>' && !(isspace(*source)) 
-            && *source != 0)){
-	    *(copy++) = *(source++);
+            if (input != NULL){
+                printf("     input: %s\n", input);
+            }
+            else {
+                printf("     input: pipe from stage %d\n", stage-1);
+            }
+/*            if (output != NULL){
+                printf("    output: %s\n", output);
+            }
+            else {
+                printf("    output: pipe to stage %d\n", stage+1);
+            }
+            printf("      argc: %d\n", argcnumber);
+            printf("      argv: ");
+            for (int i = 0; i <argcnumber; i++){
+                printf("%s", argvlist[i]);
+                if (i != argcnumber-1){
+                    printf(",");
+                }
+            }
+    */
+            if (*cur == '|'){
+                cur++;
+                stage++;
+                argcnumber = 0;
+                memset(argvlist, NULL, ARGLIMIT);
+                input = NULL;
+                if (stage == laststage){
+                    output = "original stdout";
+                }
+                else{
+                    output = NULL;
+                }
+            }
+        }
+        else{
+            if (argcnumber == ARGLIMIT){
+                printf("%s: too many arguments\n", argvlist[0]);
+                perror("failed to parse pipeline\n");
+                return 1;
+            }
+            if (*last != '>' && *last != '<'){
+                argvlist[argcnumber] = cur;
+                argcnumber++;
+            }
+            if (cur = strchr(cur, ' ')){
+                *cur == '\0';
+                cur++;
+            }
+            else {
+                cur = last;
+                cur = strchr(cur, '\0');
+            }
+        }
+        //checks if it has existing input/output that's not in/out 
     }
-    *copy = '\0';
-    return source;
-}
-
-int correctString(char *string){
-    int countPipes = 0, i = 0; /*number of pipes, for looping*/
-    char *pipesList[10] = { NULL };
-    char *argumentsList[10] = { NULL };
-    char *cursor = string, *cur = string;
-    char program[257] = "";
-    char input[257] = "original stdin";
-    char output[257] = "original stdout";
-    cursor = copyToSpace(cursor, program);
+    //end of line, repeat everything 1 last time
     
-    /*check for input and output*/
-    while(*(++cursor) == ' ');
-    if(*cursor == '<'){
-        while(*(cursor++) == ' ');
-	    cursor = copyToSpace(cursor, input);
-	    while(*(cursor++) == ' ');
-    }
-    if(*cursor == '<'){
-        while(*(cursor++) == ' ');
-	    cursor = copyToSpace(cursor, output);
-	    while(*(cursor++) == ' ');
-    }
-    if(*cursor == '<'){
-        cursor++;
-        while(*(cursor++) == ' ');
-	    cursor = copyToSpace(cursor, input);
-    }
-    
-    /*Pipes*/
-    pipesList[countPipes++] = string;
-    while((cur = strchr(cur, '|')) != NULL){
-        pipesList[countPipes++] = cur + 1;
-        *(cur++) = '\0';
-    }
-    for(i = 0; i < countPipes; i++){
-        pipePrint(i, ((i == 0) ? input : NULL),
-                    ((i == countPipes - 1) ? output : NULL), pipesList[i]);
-    }
-    return 1;
 }
+//if return 1: failed to parse input (put this into a v
+//if first thing is not name, throw null error. If it is, increment argc and put it into argv with pointer and isspace loop
 
-int main()
-{
-    char str[256] = "ls< a";
-    correctString(str);
-    return 0;
-}
+//if redirection, check next one if it's name, NULL, or redirection
