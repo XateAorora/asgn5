@@ -54,10 +54,11 @@ int main(){
     char *input = "original stdin";
     char *output = "original stdout";
     int stage = 0;    
-    char *cmdline = orig;
+    char *cmdline = strchr(orig, '|');
     int laststage = 0;
-    while (cmdline = strchr(cmdline, '|')){
+    while (cmdline != NULL){
         laststage++;
+        cmdline = strchr(cmdline+1, '|');
     }
     cmdline = orig;
     if (laststage >= PIPELIMIT){
@@ -70,7 +71,7 @@ int main(){
             cur++;
         }
         if (argcnumber == 0 && 
-        (*last == '<' || *last == '>'  || *last == '|')){
+        (*cur == '<' || *cur == '>'  || *cur == '|')){
             printf("invalid null command\n");
             perror("failed to parse pipeline\n");
             return 1;
@@ -107,7 +108,8 @@ int main(){
                 else {
                     printf("     input: pipe from stage %d\n", stage-1);
                 }
-                if (output != NULL){
+                if ((output != NULL && output != "original stdout") 
+                    || (output == "original stdout" && laststage != 0)){
                     printf("    output: %s\n", output);
                 }
                 else {
