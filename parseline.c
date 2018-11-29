@@ -30,9 +30,10 @@ int main(){
         perror("failed to parse pipeline\n");
         return 1;
     }
-    if (orig[0] == '\0' || orig[0] == '\n'){ /*empty string*/
+    if (*orig == '\0' || *orig == '\n'){ /*empty string*/
         printf("invalid null command\n");
         perror("failed to parse pipeline\n");
+        return 1;
     }
     char copy[INPUTLIMIT+1] = {'\0'}; /*for printing names*/
     strcpy(copy,orig);
@@ -49,7 +50,7 @@ int main(){
         laststage++;
         cmdline = strchr(cmdline+1, '|');
     }
-    cmdline = orig;
+    cmdline = NULL;
     if (laststage >= PIPELIMIT){
         printf("pipeline too deep\n");
         perror("failed to parse pipeline\n");
@@ -66,6 +67,11 @@ int main(){
             return 1;
         }
         if (*cur == '<' || *cur == '>' || *cur == '|' || *cur == '\0'){
+            if (argcnumber == 0 && *cur == '\0'){ //string of whitespace
+                printf("command too long\n");
+                perror("failed to parse pipeline\n");
+                return 1;
+            }
             if (*last == '<'){ 
                 printf("%s: bad input redirection\n", argvlist[0]);
                 perror("failed to parse pipeline\n");
@@ -82,7 +88,7 @@ int main(){
             }
             if (*cur == '\0' || *cur == '|'){
                 /*print routine, then with cur==last==NULL, exit loop if \0*/
-                if (cmdline == orig){
+                if (cmdline == NULL){
                     cmdline = strtok(orig, "|\n"); 
                 }
                 else{
@@ -96,7 +102,7 @@ int main(){
                 else {
                     printf("     input: %s\n", input);
                 }
-                if ((output == NULL)){
+                if ((output == NULL || (stage < laststage))){
                     printf("    output: pipe to stage %d\n", stage+1);
                 }
                 else {
@@ -162,7 +168,7 @@ int main(){
                 argcnumber++;
             }
             last = cur; 
-            if (cur = strchr(cur, ' ')){
+            if ((cur = strchr(cur, ' '))){
                 *cur = '\0';
                 cur++;
             }
