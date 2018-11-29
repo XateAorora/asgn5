@@ -4,48 +4,37 @@
 #define PIPELIMIT 10
 #define ARGLIMIT 10
 #define INPUTLIMIT 512
-//and more
-
-//goal: parse line and print accordingly
-//question: memory management for calloc for 
-/* somehow?
-Command line length: at least 512 bytes
-Commands in a pipeline: at least 10
-Arguments to a command: at least 10
+/*
+    errors to deal with: 
+    empty: expected error message
+    noArgs
+    Args
+    RedirectFrom
+    OnePipe
+    OnePipeArgs
+    ManyPipes
+    ManyPipesArgs
 */
-//original: contains original string (where we use strchr to increment with "< >" until it's false)
-//stage: string butchered by "|" token
-//stuff: string butchered by " "
-//use strtoken to find the very first command, ignoring all things before it ("< >")
-//compare strtoken and stroken (NULL, "|") to see if it found the end of the stage
-//if said strtoken above ^ is not NULL, repeat (to find the extent of the user input relevant to the stage)
-//OR use strbreak to find the start of the stage n (+1 then strtoken)
-//have a second strtoken that uses " " to break line into elements
-
-//implementation: use the last token to expect the next one
-
-//char *pch=NULL;
-//while (pch=strtok) //if pch==NULL, abort
-//if lazy, isspace() is there to help you with finding the end of a name :D without relying on strtoken
-//limits: 512 bytes for line length (?)
-//pointers to pointer for location of the next | or next argument/ ><
-
-
+/* Design ideas:
+original: contains original string (where we use strtkn to print for stage N)
+copy: copying orig then used to put /0 after every word (whitespace->/0)
+*cur, *last: keep track for > < and for the last whitespace when cur=NULL
+*/
 int main(){
     printf("line: ");
-    char orig[INPUTLIMIT + 1] = {'\0'}; //string butchered for cmdline print with "|"
+    char orig[INPUTLIMIT + 1] = {'\0'}; /*for cmdline print with "|"*/
     //sscanf(stdin,"line: %s",orig);
-    fgets(orig, INPUTLIMIT + 1, stdin);
-    if (orig[INPUTLIMIT] != '\0'){
+    fgets(orig, INPUTLIMIT + 1, stdin); /*to get the whitespace*/
+    if (orig[INPUTLIMIT] != '\0'){ /*ex:512 limit,get 513,last!=NULL->ERROR*/
         printf("command too long\n");
         perror("failed to parse pipeline\n");
         return 1;
     }
-    if (orig[0] == '\0'){
+    if (orig[0] == '\0' || orig[0] == '\n'){ /*empty string*/
         printf("invalid null command\n");
         perror("failed to parse pipeline\n");
     }
-    char copy[INPUTLIMIT+1] = {'\0'}; //string butchered with \0 after each name
+    char copy[INPUTLIMIT+1] = {'\0'}; /*for printing names*/
     strcpy(copy,orig);
     int argcnumber = 0;
     char *argvlist[ARGLIMIT] = {NULL};
@@ -88,27 +77,26 @@ int main(){
                 return 1;
             }
             if (*cur == '>' || *cur == '<'){
-                last = cur; //for saving as cur will be ++
+                last = cur; /*for saving as cur will be ++*/
                 cur++;
             }
             if (*cur == '\0' || *cur == '|'){
-                //print routine: checks if output has pipe for ambiguous, and this is where output is changed based on pipe
-                //print routine, then with cur==last==NULL, exit loop if \0
+                /*print routine, then with cur==last==NULL, exit loop if \0*/
                 if (cmdline == orig){
                     cmdline = strtok(orig, "|\n"); 
                 }
                 else{
                     cmdline = strtok(NULL, "|\n");
                 }
-                printf("\n--------\nStage %d: \"%s\"\n--------\n", stage,cmdline);
-
+                printf("\n--------\nStage %d: \"%s\"\n--------\n", 
+                stage,cmdline);
                 if (input != NULL){
                     printf("     input: %s\n", input);
                 }
                 else {
                     printf("     input: pipe from stage %d\n", stage-1);
                 }
-                if ((output != NULL && output != "original stdout") 
+                if ((output != NULL) 
                     || (output == "original stdout" && laststage != 0)){
                     printf("    output: %s\n", output);
                 }
@@ -125,14 +113,14 @@ int main(){
                 }
         
                 if (*cur == '|'){
-                    last = cur; //for saving as cur will be ++
+                    last = cur; 
                     cur++;
                     stage++;
                     argcnumber = 0;
                     memset(argvlist, NULL, ARGLIMIT);
-                    input = NULL;
+                    input = NULL; /*pipeline*/
                     if (stage == laststage){
-                        output = "original stdout";
+                        output = "original stdout"; /*pipeline logic*/
                     }
                     else{
                         output = NULL;
@@ -143,8 +131,7 @@ int main(){
                 }
             }
         }
-        //cur is a name
-        //checks the last pointer to decide cur's function as name
+        /*cur is a name*/
         else{
             if (*last == '<'){
                 if (stage != 0){
@@ -175,23 +162,16 @@ int main(){
                 argvlist[argcnumber] = cur;
                 argcnumber++;
             }
-            last = cur; //for saving as cur will be ++
+            last = cur; 
             if (cur = strchr(cur, ' ')){
                 *cur = '\0';
                 cur++;
             }
-            else { //no more whitespace, NULL
+            else { /*no more whitespace, NULL*/
                 cur = last;
                 cur = strchr(cur, '\n');
                 *cur = '\0';
             }
         }
-        //checks if it has existing input/output that's not in/out 
-    }
-    //end of line, repeat everything 1 last time
-    
+    }    
 }
-//if return 1: failed to parse input (put this into a v
-//if first thing is not name, throw null error. If it is, increment argc and put it into argv with pointer and isspace loop
-
-//if redirection, check next one if it's name, NULL, or redirection
