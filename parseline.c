@@ -50,7 +50,7 @@ int main(){
     int argcnumber = 0;
     char *argvlist[ARGLIMIT] = {NULL};
     char *cur = copy;
-    char *last = &orig[INPUTLIMIT];
+    char *last = &copy[INPUTLIMIT];
     char *input = "original stdin";
     char *output = "original stdout";
     int stage = 0;    
@@ -116,7 +116,7 @@ int main(){
                 printf("      argc: %d\n", argcnumber);
                 printf("      argv: ");
                 for (int i = 0; i <argcnumber; i++){
-                    printf("%s", argvlist[i]);
+                    printf("\"%s\"", argvlist[i]);
                     if (i != argcnumber-1){
                         printf(",");
                     }
@@ -175,12 +175,13 @@ int main(){
             }
             last = cur; //for saving as cur will be ++
             if (cur = strchr(cur, ' ')){
-                *cur == '\0';
+                *cur = '\0';
                 cur++;
             }
             else { //no more whitespace, NULL
                 cur = last;
-                cur = strchr(cur, '\0');
+                cur = strchr(cur, '\n');
+                *cur = '\0';
             }
         }
         //checks if it has existing input/output that's not in/out 
