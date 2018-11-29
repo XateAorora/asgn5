@@ -129,7 +129,7 @@ int main(){
             else{
                 cmdline = strtok(NULL, "|\n");
             }
-            printf("\n--------\nStage %d: \"%s\"\n--------", stage,cmdline);
+            printf("\n--------\nStage %d: \"%s\"\n--------\n", stage,cmdline);
 
             if (input != NULL){
                 printf("     input: %s\n", input);
