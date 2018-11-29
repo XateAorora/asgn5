@@ -62,6 +62,8 @@ int main(){
     cmdline = orig;
     if (laststage >= PIPELIMIT){
         printf("pipeline too deep\n");
+        perror("failed to parse pipeline\n");
+        return 1;
     }
     while (*cur != '\0' || *last != '\0'){
         while (isspace(*cur)){
@@ -73,7 +75,7 @@ int main(){
             perror("failed to parse pipeline\n");
             return 1;
         }
-        if (*cur == '<' || *cur == '>' || *cur == '|'){
+        if (*cur == '<' || *cur == '>' || *cur == '|' || *cur == '\0'){
             if (*last == '<'){ 
                 printf("%s: bad input redirection\n", argvlist[0]);
                 perror("failed to parse pipeline\n");
@@ -84,89 +86,84 @@ int main(){
                 perror("failed to parse pipeline\n");
                 return 1;
             }
-        }
-        //checks the last pointer to decide cur name's function
-        if (*last == '<'){
-            if (stage != 0){
-                printf("%s: ambiguous input\n", argvlist[0]);
-                perror("failed to parse pipeline\n");
-                return 1;         
-            }
-            if (input == "original stdin") {
-                input = cur;
-            }
-            else{
-                printf("%s: bad input redirection\n", argvlist[0]);
-                perror("failed to parse pipeline\n");
-                return 1;           
-            }
-        }
-        if (*last == '>'){
-            if (stage < laststage){
-                printf("%s: ambiguous output\n", argvlist[0]);
-                perror("failed to parse pipeline\n");
-                return 1;         
-            }
-            if (output == "original stdout") {
-                output = cur;
-            }
-            else{
-                printf("%s: bad output redirection\n", argvlist[0]);
-                perror("failed to parse pipeline\n");
-                return 1;            
-            }
-        }
-        last = cur; //for saving as cur will be ++
-        if (*cur == '>' || *cur == '<'){
-            cur++;
-        }
-        if (*cur == '\0' || *cur == '|'){
-            //print routine: checks if output has pipe for ambiguous, and this is where output is changed based on pipe
-            //print routine, then with cur==last==NULL, exit loop if \0
-            if (cmdline == orig){
-                cmdline = strtok(orig, "|\n"); 
-            }
-            else{
-                cmdline = strtok(NULL, "|\n");
-            }
-            printf("\n--------\nStage %d: \"%s\"\n--------\n", stage,cmdline);
-
-            if (input != NULL){
-                printf("     input: %s\n", input);
-            }
-            else {
-                printf("     input: pipe from stage %d\n", stage-1);
-            }
-/*            if (output != NULL){
-                printf("    output: %s\n", output);
-            }
-            else {
-                printf("    output: pipe to stage %d\n", stage+1);
-            }
-            printf("      argc: %d\n", argcnumber);
-            printf("      argv: ");
-            for (int i = 0; i <argcnumber; i++){
-                printf("%s", argvlist[i]);
-                if (i != argcnumber-1){
-                    printf(",");
-                }
-            }
-    */
-            if (*cur == '|'){
+            if (*cur == '>' || *cur == '<'){
+                last = cur; //for saving as cur will be ++
                 cur++;
-                stage++;
-                argcnumber = 0;
-                memset(argvlist, NULL, ARGLIMIT);
-                input = NULL;
-                if (stage == laststage){
-                    output = "original stdout";
+            }
+            if (*cur == '\0' || *cur == '|'){
+                //print routine: checks if output has pipe for ambiguous, and this is where output is changed based on pipe
+                //print routine, then with cur==last==NULL, exit loop if \0
+                if (cmdline == orig){
+                    cmdline = strtok(orig, "|\n"); 
                 }
                 else{
-                    output = NULL;
+                    cmdline = strtok(NULL, "|\n");
+                }
+                printf("\n--------\nStage %d: \"%s\"\n--------\n", stage,cmdline);
+
+                if (input != NULL){
+                    printf("     input: %s\n", input);
+                }
+                else {
+                    printf("     input: pipe from stage %d\n", stage-1);
+                }
+                if (output != NULL){
+                    printf("    output: %s\n", output);
+                }
+                else {
+                    printf("    output: pipe to stage %d\n", stage+1);
+                }
+                printf("      argc: %d\n", argcnumber);
+                printf("      argv: ");
+                for (int i = 0; i <argcnumber; i++){
+                    printf("%s", argvlist[i]);
+                    if (i != argcnumber-1){
+                        printf(",");
+                    }
+                }
+        
+                if (*cur == '|'){
+                    last = cur; //for saving as cur will be ++
+                    cur++;
+                    stage++;
+                    argcnumber = 0;
+                    memset(argvlist, NULL, ARGLIMIT);
+                    input = NULL;
+                    if (stage == laststage){
+                        output = "original stdout";
+                    }
+                    else{
+                        output = NULL;
+                    }
+                }
+                else{ //cur == '\0'
+                    last = cur;
                 }
             }
         }
+        //cur is a name
+        //checks the last pointer to decide cur's function as name
         else{
+            if (*last == '<'){
+                if (stage != 0){
+                    printf("%s: ambiguous input\n", argvlist[0]);
+                    perror("failed to parse pipeline\n");
+                    return 1;         
+                }
+                if (input == "original stdin") {
+                    input = cur;
+                }
+            }
+            if (*last == '>'){
+                if (stage < laststage){
+                    printf("%s: ambiguous output\n", argvlist[0]);
+                    perror("failed to parse pipeline\n");
+                    return 1;         
+                }
+                if (output == "original stdout") {
+                    output = cur;
+                }
+            }
             if (argcnumber == ARGLIMIT){
                 printf("%s: too many arguments\n", argvlist[0]);
                 perror("failed to parse pipeline\n");
@@ -176,11 +173,12 @@ int main(){
                 argvlist[argcnumber] = cur;
                 argcnumber++;
             }
+            last = cur; //for saving as cur will be ++
             if (cur = strchr(cur, ' ')){
                 *cur == '\0';
                 cur++;
             }
-            else {
+            else { //no more whitespace, NULL
                 cur = last;
                 cur = strchr(cur, '\0');
             }
